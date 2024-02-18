@@ -12,8 +12,13 @@
 #include "esp_https_ota.h"
 #include "esp_crt_bundle.h"
 
+#include "serverSetup.h"
+#include "smartLogger.h"
+
 #define HASH_LEN 32
 
+
+int messageCounter = 0;
 
 char username[32];
 char password[32];
@@ -103,6 +108,12 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt)
         ESP_LOGD(TAG, "HTTP_EVENT_ON_HEADER, key=%s, value=%s", evt->header_key, evt->header_value);
         break;
     case HTTP_EVENT_ON_DATA:
+        messageCounter++;
+
+        if (messageCounter >= 80) {
+          messageCounter = 0;
+          smartLog("HTTP_EVENT_ON_DATA");
+        }
         // ESP_LOGD(TAG, "HTTP_EVENT_ON_DATA, len=%d", evt->data_len);
         break;
     case HTTP_EVENT_ON_FINISH:
@@ -122,12 +133,13 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt)
 
 void weightingTask(void *parameter)
 {
+  smartLog("Starting OTA example task");
   ESP_LOGI(TAG, "Starting OTA example task");
 
   // esp_crt_bundle_init(x509_crt_imported_bundle_bin_start);
 
   const esp_http_client_config_t config = {
-    .url = "https://zzzorgo.dev/esp32/firmware1.bin",
+    .url = "https://zzzorgo.dev/esp32/firmware.bin",
     .cert_pem = "-----BEGIN CERTIFICATE-----\n"
 "MIIDdTCCAl2gAwIBAgILBAAAAAABFUtaw5QwDQYJKoZIhvcNAQEFBQAwVzELMAkG\n"
 "A1UEBhMCQkUxGTAXBgNVBAoTEEdsb2JhbFNpZ24gbnYtc2ExEDAOBgNVBAsTB1Jv\n"
@@ -157,10 +169,14 @@ void weightingTask(void *parameter)
     //   esp_https_ota_config_t ota_config = {
     //     .http_config = &config,
     // };
+    smartLog("Attempting to download update");
     ESP_LOGI(TAG, "Attempting to download update from %s", config.url);
     esp_err_t ret = esp_https_ota(&config);
     if (ret == ESP_OK) {
+        smartLog("OTA Succeed, Rebooting...");
         ESP_LOGI(TAG, "OTA Succeed, Rebooting...");
+        // destroySmartLog();
+        delay(1000);
         esp_restart();
     } else {
         ESP_LOGE(TAG, "Firmware upgrade failed");
@@ -169,6 +185,17 @@ void weightingTask(void *parameter)
   while (1) {
       vTaskDelay(1000 / portTICK_PERIOD_MS);
   }
+}
+
+void firmwareUpdate() {
+    xTaskCreate(
+      weightingTask,
+      "weightingTask",
+      8192,
+      NULL,
+      tskIDLE_PRIORITY,
+      NULL /* Task handle. */
+  );
 }
 
 void setup() {
@@ -186,7 +213,7 @@ void setup() {
 
   ESP_ERROR_CHECK(err);
 
-  get_sha256_of_partitions();
+  // get_sha256_of_partitions();
 
   ESP_ERROR_CHECK(esp_netif_init());
   read_credentials();
@@ -199,18 +226,21 @@ void setup() {
   }
 
   Serial.println("[Wifi] Connected!");
+  Serial.println(WiFi.localIP());
 
 
-  xTaskCreate(
-      weightingTask,
-      "weightingTask",
-      8192,
-      NULL,
-      tskIDLE_PRIORITY,
-      NULL /* Task handle. */
-  );
+  // xTaskCreate(
+  //     weightingTask,
+  //     "weightingTask",
+  //     8192,
+  //     NULL,
+  //     tskIDLE_PRIORITY,
+  //     NULL /* Task handle. */
+  // );
+
+  setupServer(firmwareUpdate);
 }
 
 void loop() {
-  delay(1000);
+  loopServer();
 }
