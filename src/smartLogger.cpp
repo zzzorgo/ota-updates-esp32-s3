@@ -2,16 +2,13 @@
 #include <Arduino.h>
 
 AsyncWebSocketClient* webSocketClient;
-AsyncWebSocket* wsc;
 
-void initSmartLog(void* ws, void* wsclient) {
+void initSmartLog(void* ws) {
     webSocketClient = (AsyncWebSocketClient*) ws;
-    wsc = (AsyncWebSocket*) wsclient;
 }
 
 void destroySmartLog() {
-    wsc->closeAll();
-    webSocketClient = nullptr;
+    webSocketClient->server()->closeAll();
 }
 
 void smartLog(const char* str, ...) {

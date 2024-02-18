@@ -14,7 +14,6 @@ struct OtaSecretValues {
     const char* caCert;
 };
 
-void loopOta();
 void setupOta(OtaSecretKeys* secretKeys, OtaSecretValues* secretValues = nullptr);
 void saveSecretsToNvs(OtaSecretKeys* secretKeys, OtaSecretValues* secretValues);
 

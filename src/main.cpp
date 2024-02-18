@@ -1,3 +1,4 @@
+#include <Arduino.h>
 #include "otaMain.h"
 
 void setup() {
@@ -12,5 +13,5 @@ void setup() {
 }
 
 void loop() {
-  loopOta();
+  delay(1000);
 }

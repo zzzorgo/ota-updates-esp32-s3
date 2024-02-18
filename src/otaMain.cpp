@@ -246,8 +246,3 @@ void setupOta(OtaSecretKeys *secretKeys, OtaSecretValues *secretValues)
     setupServer(firmwareUpdate);
     smartLog("OTA is ready");
 }
-
-void loopOta()
-{
-    loopServer();
-}
