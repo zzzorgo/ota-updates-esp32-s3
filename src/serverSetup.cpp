@@ -5,7 +5,7 @@
 AsyncWebServer server(80);
 AsyncWebSocket ws("/ws"); // access at ws://[esp ip]/ws
 
-void (*fwUpdate)();
+std::vector<OtaCommand> localCommands;
 
 void onRequest(AsyncWebServerRequest *request)
 {
@@ -49,6 +49,21 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
       {
         data[len] = 0;
         smartLog("%s\n", (char *)data);
+
+        for (int i = 0; i < 10; i++)
+        {
+          OtaCommand command = localCommands.at(i);
+
+          if (strcmp((char *)data, command.key) == 0)
+          {
+            command.callback();
+            smartLog("Command executed successfully: %s", command.key);
+
+            break;
+          }
+        }
+
+        smartLog("Done");
       }
       else
       {
@@ -58,15 +73,6 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
         }
         smartLog("\n");
       }
-      if (info->opcode == WS_TEXT)
-        if (strcmp((char *)data, "update") == 0)
-        {
-          fwUpdate();
-        }
-        else
-        {
-          client->binary("I got your binary message");
-        }
     }
     else
     {
@@ -109,10 +115,9 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
   }
 }
 
-void setupServer(void (*firmwareUpdate)(void))
+void setupServer(std::vector<OtaCommand> commands)
 {
-  fwUpdate = firmwareUpdate;
-
+  localCommands = commands;
   ws.onEvent(onEvent);
 
   server.addHandler(&ws);

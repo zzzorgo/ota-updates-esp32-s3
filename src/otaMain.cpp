@@ -9,6 +9,7 @@
 #include <esp_ota_ops.h>
 #include <esp_https_ota.h>
 #include <esp_crt_bundle.h>
+#include <vector>
 
 #include "sdkconfig.h"
 #include "serverSetup.h"
@@ -23,6 +24,16 @@ int64_t lastDataNotificationTime = 0;
 char username[32];
 char password[32];
 char caCert[4096];
+char mac[32];
+char passKey[7];
+
+OtaSecretValues populatedOtaSecrets = {
+    .wifiSsid = username,
+    .wifiPassword = password,
+    .caCert = caCert,
+    .bikeMac = mac,
+    .bikePassKey = passKey,
+};
 
 void readValueFromNvs(nvs_handle_t* nvsHandle, const char* key, char* output) {
     size_t requiredSize;
@@ -54,6 +65,14 @@ void loadSecretsFromNvs(OtaSecretKeys *secretKeys)
     readValueFromNvs(&nvsHandle, secretKeys->wifiSsidNvsKey, username);
     readValueFromNvs(&nvsHandle, secretKeys->wifiPasswordNvsKey, password);
     readValueFromNvs(&nvsHandle, secretKeys->caCertNvsKey, caCert);
+    readValueFromNvs(&nvsHandle, secretKeys->bikeMacNvsKey, mac);
+    readValueFromNvs(&nvsHandle, secretKeys->bikePassKeyNvsKey, passKey);
+
+    populatedOtaSecrets.wifiSsid = username;
+    populatedOtaSecrets.wifiPassword = password;
+    populatedOtaSecrets.caCert = caCert;
+    populatedOtaSecrets.bikeMac = mac;
+    populatedOtaSecrets.bikePassKey = passKey;
 
     // Close the NVS handle
     nvs_close(nvsHandle);
@@ -82,6 +101,8 @@ void saveSecretsToNvs(OtaSecretKeys *secretKeys, OtaSecretValues *secretValues)
     writeValueToNvs(&nvsHandle, secretKeys->wifiSsidNvsKey, secretValues->wifiSsid);
     writeValueToNvs(&nvsHandle, secretKeys->wifiPasswordNvsKey, secretValues->wifiPassword);
     writeValueToNvs(&nvsHandle, secretKeys->caCertNvsKey, secretValues->caCert);
+    writeValueToNvs(&nvsHandle, secretKeys->bikeMacNvsKey, secretValues->bikeMac);
+    writeValueToNvs(&nvsHandle, secretKeys->bikePassKeyNvsKey, secretValues->bikePassKey);
 
     // Commit the changes to flash
     nvs_commit(nvsHandle);
@@ -207,7 +228,7 @@ void firmwareUpdate()
     );
 }
 
-void setupOta(OtaSecretKeys *secretKeys, OtaSecretValues *secretValues)
+void setupOta(OtaSecretKeys *secretKeys, std::vector<OtaCommand> commands, OtaSecretValues *secretValues)
 {
     smartLog("Setting up OTA");
     esp_err_t err = nvs_flash_init();
@@ -244,6 +265,11 @@ void setupOta(OtaSecretKeys *secretKeys, OtaSecretValues *secretValues)
 
     smartLog("[Wifi] Connected! %s", WiFi.localIP().toString().c_str());
 
-    setupServer(firmwareUpdate);
+    commands.push_back({
+        .key = "update",
+        .callback = firmwareUpdate,
+    });
+
+    setupServer(commands);
     smartLog("OTA is ready");
 }
