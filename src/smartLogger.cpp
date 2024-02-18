@@ -16,8 +16,7 @@ void smartLog(const char* str, ...) {
     va_list args;
     va_start(args, str);
 
-    // Print the formatted message using vsnprintf
-    char buffer[256]; // Adjust the buffer size as needed
+    char buffer[256];
     vsnprintf(buffer, sizeof(buffer), str, args);
 
     if (webSocketClient != nullptr) {
@@ -27,6 +26,5 @@ void smartLog(const char* str, ...) {
     printf(buffer);
     printf("\n");
 
-    // Clean up the va_list
     va_end(args);
 }

@@ -142,7 +142,7 @@ esp_err_t httpEventHandler(esp_http_client_event_t *evt)
     case HTTP_EVENT_ON_DATA:
         loadedBytes += evt->data_len;
 
-        if (nowTimeMicroS - lastDataNotificationTime > 500000)
+        if (nowTimeMicroS - lastDataNotificationTime > 500000 || nowTimeMicroS <= lastDataNotificationTime)
         {
             lastDataNotificationTime = nowTimeMicroS;
             smartLog("HTTP_EVENT_ON_DATA %d", loadedBytes);
@@ -179,8 +179,9 @@ void firmwareUpdateTask(void *parameter)
     if (ret == ESP_OK)
     {
         smartLog("OTA Succeed, Rebooting...");
+        delay(2000);
         destroySmartLog();
-        delay(1000);
+        delay(2000);
         esp_restart();
     }
     else
