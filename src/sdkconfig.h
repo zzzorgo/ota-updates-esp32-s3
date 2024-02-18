@@ -3,6 +3,7 @@
  * Espressif IoT Development Framework (ESP-IDF) Configuration Header
  */
 #pragma once
+#define CONFIG_APP_LOG_TAG "ota-developer"
 #define CONFIG_IDF_CMAKE 1
 #define CONFIG_IDF_TARGET_ARCH_XTENSA 1
 #define CONFIG_IDF_TARGET "esp32s3"
