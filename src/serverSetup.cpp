@@ -33,7 +33,7 @@ void onUpload(AsyncWebServerRequest *request, String filename, size_t index, uin
 void onEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len){
   if(type == WS_EVT_CONNECT){
     //client connected
-    initSmartLog(client);
+    initSmartLog(client, &ws);
     ESP_LOGI(CONFIG_APP_LOG_TAG, "ws[%s][%u] connect\n", server->url(), client->id());
     client->printf("Hello Client (hey) %u :)", client->id());
     client->ping();
